@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdint.h> //uint16_t
 #include <math.h> //sqrt()
+#include <time.h> //clock() - CLOCKS_PER_SEC
 
 #include "./Recursos/Mem.h"
 #include "./Recursos/Print.h"
@@ -207,6 +208,8 @@ void Guardar( float * V , float * H , unsigned int gates )
 int main()
 {
 	
+	double tiempo_inicial = clock();
+	
 	unsigned int columnas = 0;
 	unsigned int nro_gates = Cantidad_de_datos( &columnas );
 	
@@ -257,6 +260,12 @@ int main()
 	///@todo no sería necesario si va a finalizar el progama
 	Mem_desassign( (void **)&V_autoc );
 	Mem_desassign( (void **)&H_autoc );
+	
+	double tiempo_final = clock();
+	double tiempo = ( tiempo_final - tiempo_inicial ) / ( double ) CLOCKS_PER_SEC;
+	printf( "\n t = %f'" , tiempo );
+	
+	printf( "\n" );
 	
 	return 0;
 	
