@@ -1,10 +1,12 @@
 #include <stdio.h>
-#include <stdint.h>
+#include <stdint.h> //uint16_t
+#include <math.h> //sqrt()
 
 #include "./Recursos/Mem.h"
 #include "./Recursos/Print.h"
 
 const char * F_LOC = "pulsos.iq";
+const char * F_LOC_SAVE = "res.iq";
 
 unsigned int Cantidad_de_datos( unsigned int * mayor_columnas )
 {
@@ -16,7 +18,7 @@ unsigned int Cantidad_de_datos( unsigned int * mayor_columnas )
 	*mayor_columnas = 0;
 	
 	unsigned int cantidad = 0;
-	while( 1 ) /// @todo riesgo de bucle infinito
+	while( 1 ) /// @todo @bug riesgo de bucle infinito
 	{
 		
 		uint16_t validSamples = 0;
@@ -24,7 +26,6 @@ unsigned int Cantidad_de_datos( unsigned int * mayor_columnas )
 			break;
 		
 		cantidad++;
-		printf( "\n validSamples = %u" , validSamples );
 		unsigned int pulsos_n = validSamples / 500;
 		unsigned int columnas = validSamples / pulsos_n;
 		if( *mayor_columnas < columnas )
@@ -66,19 +67,17 @@ unsigned int Carga_de_datos( matrix ** datos )
 		return 0;
 	
 	unsigned int gate_nro = 0;
-	while( 1 ) /// @todo riesgo de bucle infinito
+	while( 1 ) /// @todo @bug riesgo de bucle infinito
 	{
 		
 		uint16_t validSamples = 0;
 		if( fread( &validSamples , 1 , 2 , archivo ) != 2 )
 			return gate_nro;
+		///@todo @bug los return no cierran el archivo
 		
 		long int pos_arch = ftell( archivo );
 		
-		printf( "\n ~validSamples = %u" , validSamples );
-		
 		gate_nro++;
-		printf( "\n gate_nro = %u" , gate_nro );
 		unsigned int pulso_n = validSamples / 500;
 		unsigned int pulsos = validSamples / pulso_n;
 		
@@ -124,6 +123,87 @@ unsigned int Carga_de_datos( matrix ** datos )
 	
 }
 
+matrix * Matriz_de_valores_absolutos( matrix * r , matrix * i )
+{
+	
+	matrix * abs = Mem_Create_matrix( r->rows ,
+									  r->columns ,
+									  r->type_size );
+	
+	float ** reales = (float **)r->m;
+	float ** imaginarios = (float **)i->m;
+	float ** valores_absolutos = (float **)abs->m;
+	
+	unsigned int columna;
+	unsigned int fila;
+	for( fila = 0 ; fila < abs->rows ; fila++ )
+		for( columna = 0 ; columna < abs->columns ; columna++ )
+		{
+			
+			float valor_abs = sqrt( pow(reales[fila][columna] , 2) +
+									pow(imaginarios[fila][columna] , 2)
+									 );
+			valores_absolutos[fila][columna] = valor_abs;
+			
+		}
+	
+	return abs;
+	
+}
+
+float * Vector_de_autocorrelaciones( matrix * M_abs )
+{
+	
+	float * autoc = Mem_assign_vector_zeros( M_abs->rows , sizeof(float) );
+	float ** abs = (float **)M_abs->m;
+	
+	unsigned int pulsos = M_abs->columns;
+	unsigned int gates = M_abs->rows;
+	
+	unsigned int gate_nro;
+	unsigned int pulso_nro;
+	for( gate_nro = 0 ; gate_nro < gates ; gate_nro++ )
+	{
+		
+		for( pulso_nro = 0 ; pulso_nro < (pulsos - 1) ; pulso_nro++ )
+		{
+			
+			autoc[gate_nro] += abs[gate_nro][pulso_nro] *
+							  (-1) *
+							  abs[gate_nro][pulso_nro + 1];
+			
+		}
+		
+		autoc[gate_nro] /= pulsos;
+		
+	}
+	
+	return autoc;
+	
+}
+
+void Guardar( float * V , float * H , unsigned int gates )
+{
+	
+	FILE * archivo = fopen( F_LOC_SAVE , "wb" );
+	if( archivo == NULL )
+		return;
+	
+	fwrite( &gates , 1 , sizeof( unsigned int ) , archivo );
+	
+	unsigned int gate;
+	for( gate = 0 ; gate < gates ; gate++ )
+	{
+		
+		fwrite( &V[gate] , 1 , sizeof( float ) , archivo );
+		fwrite( &H[gate] , 1 , sizeof( float ) , archivo );
+		
+	}
+	
+	fclose( archivo );
+	
+}
+
 int main()
 {
 	
@@ -155,17 +235,28 @@ int main()
 		return 1;
 	}
 	
-	Print_matrix_float( (float **)V_I->m , V_I->rows , V_I->columns );
+	matrix * V_abs = Matriz_de_valores_absolutos( V_I , V_Q );
+	matrix * H_abs = Matriz_de_valores_absolutos( H_I , H_Q );
 	
-	printf( "\n" );
-	
-	///Libero la memoria
 	Mem_Delete_matrix( &V_I );
 	Mem_Delete_matrix( &V_Q );
 	Mem_Delete_matrix( &H_I );
 	Mem_Delete_matrix( &H_Q );
 	free( datos );
 	datos = NULL;
+	
+	float * V_autoc = Vector_de_autocorrelaciones( V_abs );
+	float * H_autoc = Vector_de_autocorrelaciones( V_abs );
+	
+	Mem_Delete_matrix( &V_abs );
+	Mem_Delete_matrix( &H_abs );
+	
+	Guardar( V_autoc , H_autoc , nro_gates );
+	
+	///Libero la memoria
+	///@todo no sería necesario si va a finalizar el progama
+	Mem_desassign( (void **)&V_autoc );
+	Mem_desassign( (void **)&H_autoc );
 	
 	return 0;
 	

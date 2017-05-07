@@ -45,6 +45,27 @@ void * Mem_assign( size_t s )
 }
 
 /**
+ * @brief Asigna memoria mediante calloc y comprueba, en caso de fallar
+ * advierte y cierrra el programa
+ *
+ * @param s cantidad a asignar
+ *
+ * @return el retorno de malloc( s )
+ */
+void * Mem_assign_vector_zeros( size_t rows , size_t type_size )
+{
+	
+	void * ptr = calloc( rows , type_size );
+	
+	if( ptr != NULL )
+		return ptr;
+	
+	printf( "\n --- MEMORY ASSIGNMENT FAULT ---  \n" );
+	exit( 1 );
+	
+}
+
+/**
  * @brief Libera la memoria mediante free y apunta a null
  *
  * @param p puntero a liberar

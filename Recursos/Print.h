@@ -37,7 +37,7 @@ void Print_matrix_int
 }
 
 void Print_matrix_float
-( float ** matrix , long unsigned rows , long unsigned columns )
+( float ** matrx , long unsigned rows , long unsigned columns )
 {
 	
 	long unsigned int row;
@@ -47,7 +47,20 @@ void Print_matrix_float
 			printf( "\n matrix[%lu][%lu] = %f" ,
 					 row ,
 					 column ,
-					 matrix[row][column] );
+					 matrx[row][column] );
+	
+}
+
+void Print_vector_float
+( float * vector , long unsigned int size , char * name )
+{
+	
+	long unsigned int pos;
+	for( pos = 0 ; pos < size ; pos++ )
+		printf( "\n %s[%lu] = %f" ,
+				 name ,
+				 pos ,
+				 vector[pos] );
 	
 }
 
