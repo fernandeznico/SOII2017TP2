@@ -161,6 +161,8 @@ float * Vector_de_autocorrelaciones( matrix * M_abs )
 	unsigned int pulsos = M_abs->columns;
 	unsigned int gates = M_abs->rows;
 	
+	double tiempo_inicial = clock();
+	
 	unsigned int gate_nro;
 	unsigned int pulso_nro;
 	for( gate_nro = 0 ; gate_nro < gates ; gate_nro++ )
@@ -178,6 +180,10 @@ float * Vector_de_autocorrelaciones( matrix * M_abs )
 		autoc[gate_nro] /= pulsos;
 		
 	}
+	
+	double tiempo_final = clock();
+	double tiempo = ( tiempo_final - tiempo_inicial ) / ( double ) CLOCKS_PER_SEC;
+	printf( "\n t = %f'" , tiempo );
 	
 	return autoc;
 	
@@ -207,8 +213,6 @@ void Guardar( float * V , float * H , unsigned int gates )
 
 int main()
 {
-	
-	double tiempo_inicial = clock();
 	
 	unsigned int columnas = 0;
 	unsigned int nro_gates = Cantidad_de_datos( &columnas );
@@ -260,10 +264,6 @@ int main()
 	///@todo no sería necesario si va a finalizar el progama
 	Mem_desassign( (void **)&V_autoc );
 	Mem_desassign( (void **)&H_autoc );
-	
-	double tiempo_final = clock();
-	double tiempo = ( tiempo_final - tiempo_inicial ) / ( double ) CLOCKS_PER_SEC;
-	printf( "\n t = %f'" , tiempo );
 	
 	printf( "\n" );
 	
